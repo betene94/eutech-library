@@ -71,6 +71,89 @@ app.delete('/authors/:id', async (req, res) => {
   }
 });
 
+// GET /books — Récupérer tous les livres
+app.get('/books', async (req, res) => {
+  try {
+    const books = await prisma.book.findMany({
+      include: {
+        author: true,
+        category: true,
+      },
+    });
+    res.json(books);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des livres.' });
+  }
+});
+
+// POST /books — Créer un nouveau livre
+app.post('/books', async (req, res) => {
+  try {
+    const {
+      title,
+      isbn,
+      publisher,
+      publishYear,
+      summary,
+      coverUrl,
+      available,
+      authorId,
+      categoryId,
+    } = req.body;
+
+    if (!title || !authorId) {
+      return res.status(400).json({ error: 'title et authorId sont requis.' });
+    }
+
+    const newBook = await prisma.book.create({
+      data: {
+        title,
+        isbn,
+        publisher,
+        publishYear,
+        summary,
+        coverUrl,
+        available: available ?? true,
+        author: { connect: { id: Number(authorId) } },
+        category: categoryId ? { connect: { id: Number(categoryId) } } : undefined,
+      },
+      include: { author: true, category: true },
+    });
+
+    res.status(201).json(newBook);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur à la création du livre.' });
+  }
+});
+
+// GET /categories — Lister toutes les catégories
+app.get('/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany();
+    res.json(categories);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des catégories.' });
+  }
+});
+
+// POST /categories — Créer une nouvelle catégorie
+app.post('/categories', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Le champ name est requis.' });
+    }
+    const newCat = await prisma.category.create({ data: { name } });
+    res.status(201).json(newCat);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur à la création de la catégorie.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
