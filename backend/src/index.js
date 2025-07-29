@@ -154,6 +154,60 @@ app.post('/categories', async (req, res) => {
   }
 });
 
+// PUT /books/:id — Mettre à jour un livre
+app.put('/books/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const {
+    title,
+    isbn,
+    publisher,
+    publishYear,
+    summary,
+    coverUrl,
+    available,
+    authorId,
+    categoryId,
+  } = req.body;
+  if (!title || !authorId) {
+    return res.status(400).json({ error: 'title et authorId sont requis.' });
+  }
+  try {
+    const updated = await prisma.book.update({
+      where: { id },
+      data: {
+        title,
+        isbn,
+        publisher,
+        publishYear,
+        summary,
+        coverUrl,
+        available: available ?? true,
+        author: { connect: { id: Number(authorId) } },
+        category: categoryId
+          ? { connect: { id: Number(categoryId) } }
+          : undefined,
+      },
+      include: { author: true, category: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: `Livre id=${id} introuvable ou erreur.` });
+  }
+});
+
+// DELETE /books/:id — Supprimer un livre
+app.delete('/books/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.book.delete({ where: { id } });
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: `Livre id=${id} introuvable.` });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
