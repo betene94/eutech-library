@@ -40,6 +40,36 @@ app.post('/authors', async (req, res) => {
   }
 });
 
+// PUT /authors/:id — Mettre à jour un auteur
+app.put('/authors/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { firstName, lastName, biography } = req.body;
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: 'firstName et lastName sont requis.' });
+  }
+  try {
+    const updated = await prisma.author.update({
+      where: { id },
+      data: { firstName, lastName, biography },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: `Auteur avec id=${id} introuvable.` });
+  }
+});
+
+// DELETE /authors/:id — Supprimer un auteur
+app.delete('/authors/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.author.delete({ where: { id } });
+    res.status(204).send(); // No Content
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: `Auteur avec id=${id} introuvable.` });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
